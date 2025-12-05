@@ -1,0 +1,12 @@
+{
+  "name": "超级杠杆",
+  "description": "",
+  "requestFramePermissions": []
+}
+EOF 
+cat <<EOF > /root/market_source/metadata.json
+{
+  "name": "超级杠杆",
+  "description": “Daily Review” ,
+  "requestFramePermissions": []
+}
