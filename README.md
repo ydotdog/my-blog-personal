@@ -77,9 +77,48 @@
 由于这是单页应用（SPA），如果你使用 Nginx，必须在配置中添加 fallback 规则，否则刷新二级页面会报错 404：
 
 ```nginx
-location / {
-    root   /var/www/your-blog;
-    index  index.html;
-    try_files $uri $uri/ /index.html;  # 关键配置
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /posts/ {
+        try_files $uri =404;
+    }
+    location /assets/ {
+        try_files $uri =404;
+    }
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 }
 ```
+
+---
+
+## 2026-02-26 踩坑记录：HashRouter → BrowserRouter 迁移
+
+### 背景
+
+将 URL 从 `https://y.dog/#/slug` 改为干净的 `https://y.dog/slug`。
+
+### 改动点
+
+1. **App.tsx**：`HashRouter` → `BrowserRouter`（一行改动）
+2. **Nginx**：新增 `try_files $uri $uri/ /index.html` SPA fallback 配置，通过 Docker volume 挂载
+3. **docker-compose.yml**：增加一行 nginx conf 挂载
+
+### 踩坑：react 与 react-dom 版本不匹配（blog-qianduan 仓库）
+
+**现象**：部署后页面白屏，控制台报错：
+```
+Uncaught TypeError: Cannot read properties of undefined (reading 'S')
+```
+
+**原因**：`react` 锁定为 `18.2.0`，但 `react-dom` 写的是 `^19.2.1`，实际安装了 19.2.4。React 18 与 React DOM 19 内部 API 不兼容，打包后运行时崩溃。
+
+**教训**：
+- 不要用 `--legacy-peer-deps` 绕过版本冲突，应先排查根因
+- `react` 和 `react-dom` 的大版本必须一致
+- 部署后应在浏览器中实际验证，`curl` 返回 200 不代表页面能正常渲染
